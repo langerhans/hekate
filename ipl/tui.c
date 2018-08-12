@@ -20,6 +20,7 @@
 #include "config.h"
 #include "max17050.h"
 #include "util.h"
+#include "touch.h"
 
 #ifdef MENU_LOGO_ENABLE
 extern u8 *Kc_MENU_LOGO;
@@ -159,6 +160,50 @@ void *tui_do_menu(gfx_con_t *con, menu_t *menu)
 		gfx_con_setpos(con, 0,  1191);
 		gfx_printf(con, "%k VOL: Move up/down\n PWR: Select option%k", 0xFF555555, 0xFFCCCCCC);
 
+		gfx_con_setpos(con, 150, 1280-350);
+		gfx_putc(con, 'v');
+		gfx_con_setpos(con, 350, 1280-350);
+		gfx_putc(con, '^');
+		gfx_con_setpos(con, 550, 1280-350);
+		gfx_putc(con, 'x');
+		struct touch_event event = touch_wait();
+		if (event.y >= 300 && event.y <= 400) {
+			if (event.x >= 100 && event.x <= 200 && idx < (cnt - 1))
+				idx++;
+			else if (event.x >= 100 && event.x <= 200 && idx == (cnt - 1))
+				idx = 0;
+			if (event.x >= 300 && event.x <= 400 && idx > 0)
+				idx--;
+			else if (event.x >= 300 && event.x <= 400 && idx == 0)
+				idx = cnt - 1;
+			if (event.x >= 500 && event.x <= 600) {
+				ment_t *ent = &menu->ents[idx];
+				switch (ent->type)
+				{
+				case MENT_HANDLER:
+					ent->handler(ent->data);
+					break;
+				case MENT_MENU:
+					return tui_do_menu(con, ent->menu);
+					break;
+				case MENT_CHOICE:
+					return ent->data;
+					break;
+				case MENT_BACK:
+					return NULL;
+					break;
+				default:
+					break;
+				}
+				con->fntsz = 16;
+				gfx_clear_partial_grey(con->gfx_ctxt, 0x1B, 0, 1256);
+#ifdef MENU_LOGO_ENABLE
+				gfx_set_rect_rgb(con->gfx_ctxt, Kc_MENU_LOGO,
+					X_MENU_LOGO, Y_MENU_LOGO, X_POS_MENU_LOGO, Y_POS_MENU_LOGO);
+#endif //MENU_LOGO_ENABLE
+			}
+		}
+/*
 		// Wait for user command.
 		u32 btn = btn_wait();
 
@@ -197,6 +242,7 @@ void *tui_do_menu(gfx_con_t *con, menu_t *menu)
 				X_MENU_LOGO, Y_MENU_LOGO, X_POS_MENU_LOGO, Y_POS_MENU_LOGO);
 #endif //MENU_LOGO_ENABLE
 		}
+*/
 		tui_sbar(con, 0);
 	}
 
